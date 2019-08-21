@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -22,6 +23,35 @@ import (
 	"github.com/AdguardTeam/golibs/log"
 	"github.com/joomcode/errorx"
 )
+
+// Set certificate and private key data
+func tlsLoadConfig(tls *tlsConfig) error {
+	tls.CertificateChainData = []byte(tls.CertificateChain)
+	tls.PrivateKeyData = []byte(tls.PrivateKey)
+
+	var err error
+	if tls.CertificatePath != "" {
+		if tls.CertificateChain != "" {
+			return fmt.Errorf("certificate data and file can't be set together")
+		}
+		tls.CertificateChainData, err = ioutil.ReadFile(tls.CertificatePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if tls.PrivateKeyPath != "" {
+		if tls.PrivateKey != "" {
+			return fmt.Errorf("private key data and file can't be set together")
+		}
+		tls.PrivateKeyData, err = ioutil.ReadFile(tls.PrivateKeyPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // RegisterTLSHandlers registers HTTP handlers for TLS configuration
 func RegisterTLSHandlers() {
@@ -83,8 +113,13 @@ func handleTLSConfigure(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	err = tlsLoadConfig(&data)
+	if err != nil {
+		httpError(w, http.StatusBadRequest, "reading file: %s", err)
+		return
+	}
+	data.tlsConfigStatus = validateCertificates(string(data.CertificateChainData), string(data.PrivateKeyData), data.ServerName)
 	restartHTTPS := false
-	data.tlsConfigStatus = validateCertificates(data.CertificateChain, data.PrivateKey, data.ServerName)
 	if !reflect.DeepEqual(config.TLS.tlsConfigSettings, data.tlsConfigSettings) {
 		log.Printf("tls config settings have changed, will restart HTTPS server")
 		restartHTTPS = true
@@ -303,6 +338,9 @@ func unmarshalTLS(r *http.Request) (tlsConfig, error) {
 			return data, errorx.Decorate(err, "Failed to base64-decode certificate chain")
 		}
 		data.CertificateChain = string(certPEM)
+		if data.CertificatePath != "" {
+			return data, fmt.Errorf("certificate data and file can't be set together")
+		}
 	}
 
 	if data.PrivateKey != "" {
@@ -312,6 +350,9 @@ func unmarshalTLS(r *http.Request) (tlsConfig, error) {
 		}
 
 		data.PrivateKey = string(keyPEM)
+		if data.PrivateKeyPath != "" {
+			return data, fmt.Errorf("private key data and file can't be set together")
+		}
 	}
 
 	return data, nil

@@ -8,6 +8,7 @@ require (
 	github.com/AdguardTeam/urlfilter v0.5.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/bluele/gcache v0.0.0-20190518031135-bc40bd653833
+	github.com/etcd-io/bbolt v1.3.3
 	github.com/go-test/deep v1.0.1
 	github.com/gobuffalo/packr v1.19.0
 	github.com/joomcode/errorx v0.8.0
@@ -17,6 +18,7 @@ require (
 	github.com/miekg/dns v1.1.8
 	github.com/sparrc/go-ping v0.0.0-20181106165434-ef3ab45e41b0
 	github.com/stretchr/testify v1.3.0
+	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0
 	gopkg.in/asaskevich/govalidator.v4 v4.0.0-20160518190739-766470278477

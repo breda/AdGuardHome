@@ -100,6 +100,7 @@ type FilteringConfig struct {
 	// Per-client settings can override this configuration.
 	BlockedServices []string `yaml:"blocked_services"`
 
+	CacheSize        uint `yaml:"cache_size"` // DNS cache size (number of entries)
 	dnsfilter.Config `yaml:",inline"`
 }
 
@@ -202,6 +203,7 @@ func (s *Server) startInternal(config *ServerConfig) error {
 		BeforeRequestHandler:     s.beforeRequestHandler,
 		RequestHandler:           s.handleDNSRequest,
 		AllServers:               s.conf.AllServers,
+		CacheSize:                int(s.conf.CacheSize),
 	}
 
 	err = processIPCIDRArray(&s.AllowedClients, &s.AllowedClientsIPNet, s.conf.AllowedClients)

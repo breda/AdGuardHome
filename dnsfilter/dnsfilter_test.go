@@ -54,6 +54,7 @@ func NewForTest(c *Config, filters map[int]string) *Dnsfilter {
 		c.SafeBrowsingCacheSize = 1000
 		c.SafeSearchCacheSize = 1000
 		c.ParentalCacheSize = 1000
+		c.CacheTime = 30
 		setts.SafeSearchEnabled = c.SafeSearchEnabled
 		setts.SafeBrowsingEnabled = c.SafeBrowsingEnabled
 		setts.ParentalEnabled = c.ParentalEnabled

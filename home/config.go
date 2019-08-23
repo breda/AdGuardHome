@@ -216,6 +216,7 @@ func initConfig() {
 	config.DNS.SafeBrowsingCacheSize = 5000
 	config.DNS.SafeSearchCacheSize = 5000
 	config.DNS.ParentalCacheSize = 5000
+	config.DNS.CacheTime = 30
 }
 
 // getConfigFilename returns path to the current config file

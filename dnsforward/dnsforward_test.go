@@ -494,6 +494,7 @@ func createTestServer(t *testing.T) *Server {
 	s.conf.SafeBrowsingCacheSize = 1000
 	s.conf.SafeSearchCacheSize = 1000
 	s.conf.ParentalCacheSize = 1000
+	s.conf.CacheTime = 30
 
 	rules := "||nxdomain.example.org^\n||null.example.org^\n127.0.0.1	host.example.org\n"
 	filter := dnsfilter.Filter{ID: 0, Data: []byte(rules)}

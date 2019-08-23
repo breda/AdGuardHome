@@ -25,8 +25,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const defaultCacheTime = 30 * time.Minute
-
 const defaultHTTPTimeout = 5 * time.Minute
 const defaultHTTPMaxIdleConnections = 100
 
@@ -70,6 +68,7 @@ type Config struct {
 	SafeBrowsingCacheSize uint `yaml:"safebrowsing_cache_size"`
 	SafeSearchCacheSize   uint `yaml:"safesearch_cache_size"`
 	ParentalCacheSize     uint `yaml:"parental_cache_size"`
+	CacheTime             uint `yaml:"cache_time"` // Element's TTL (in minutes)
 
 	Rewrites []RewriteEntry `yaml:"rewrites"`
 
@@ -855,18 +854,19 @@ func (d *Dnsfilter) createCustomDialContext(resolverAddr string) dialFunctionTyp
 func New(c *Config, filters map[int]string) *Dnsfilter {
 
 	if c != nil {
+		dur := time.Duration(c.CacheTime) * time.Minute
 		// initialize objects only once
 		if gctx.safebrowsingCache == nil {
-			gctx.safebrowsingCache = gcache.New(int(c.SafeBrowsingCacheSize)).LRU().Expiration(defaultCacheTime).Build()
+			gctx.safebrowsingCache = gcache.New(int(c.SafeBrowsingCacheSize)).LRU().Expiration(dur).Build()
 		}
 		if gctx.safeSearchCache == nil {
-			gctx.safeSearchCache = gcache.New(int(c.SafeSearchCacheSize)).LRU().Expiration(defaultCacheTime).Build()
+			gctx.safeSearchCache = gcache.New(int(c.SafeSearchCacheSize)).LRU().Expiration(dur).Build()
 		}
 		if gctx.parentalCache == nil {
-			gctx.parentalCache = gcache.New(int(c.ParentalCacheSize)).LRU().Expiration(defaultCacheTime).Build()
+			gctx.parentalCache = gcache.New(int(c.ParentalCacheSize)).LRU().Expiration(dur).Build()
 		}
 		if len(c.ResolverAddress) != 0 && gctx.dialCache == nil {
-			gctx.dialCache = gcache.New(maxDialCacheSize).LRU().Expiration(defaultCacheTime).Build()
+			gctx.dialCache = gcache.New(maxDialCacheSize).LRU().Expiration(dur).Build()
 		}
 	}
 

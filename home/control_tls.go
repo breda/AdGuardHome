@@ -87,7 +87,13 @@ func handleTLSValidate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data.tlsConfigStatus = validateCertificates(data.CertificateChain, data.PrivateKey, data.ServerName)
+	err = tlsLoadConfig(&data)
+	if err != nil {
+		httpError(w, http.StatusBadRequest, "reading file: %s", err)
+		return
+	}
+
+	data.tlsConfigStatus = validateCertificates(string(data.CertificateChainData), string(data.PrivateKeyData), data.ServerName)
 	marshalTLS(w, data)
 }
 

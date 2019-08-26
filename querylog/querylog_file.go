@@ -1,4 +1,4 @@
-package dnsforward
+package querylog
 
 import (
 	"bytes"
@@ -170,7 +170,7 @@ func (l *queryLog) rotateQueryLog() error {
 }
 
 func (l *queryLog) periodicQueryLogRotate() {
-	for range time.Tick(l.interval) {
+	for range time.Tick(l.conf.Interval) {
 		err := l.rotateQueryLog()
 		if err != nil {
 			log.Error("Failed to rotate querylog: %s", err)

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AdguardTeam/AdGuardHome/querylog"
 	"github.com/AdguardTeam/AdGuardHome/stats"
 
 	"github.com/AdguardTeam/AdGuardHome/dhcpd"
@@ -71,6 +72,7 @@ type configuration struct {
 	transport        *http.Transport
 	client           *http.Client
 	stats            stats.Stats
+	queryLog         querylog.QueryLog
 
 	// cached version.json to avoid hammering github.io for each page reload
 	versionCheckJSON     []byte

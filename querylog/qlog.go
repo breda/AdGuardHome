@@ -1,4 +1,4 @@
-package dnsforward
+package querylog
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ const (
 
 // queryLog is a structure that writes and reads the DNS query log
 type queryLog struct {
+	conf    Config
 	logFile string // path to the log file
 
 	// time interval file rotation interval
@@ -38,11 +39,16 @@ type queryLog struct {
 }
 
 // newQueryLog creates a new instance of the query log
-func newQueryLog(baseDir string) *queryLog {
-	l := &queryLog{
-		logFile: filepath.Join(baseDir, queryLogFileName),
-	}
-	return l
+func newQueryLog(conf Config) *queryLog {
+	l := queryLog{}
+	l.logFile = filepath.Join(conf.BaseDir, queryLogFileName)
+	l.conf = conf
+	go l.periodicQueryLogRotate()
+	return &l
+}
+
+func (l *queryLog) Close() {
+	l.flushLogBuffer(true)
 }
 
 type logEntry struct {
@@ -55,17 +61,28 @@ type logEntry struct {
 	Upstream string `json:",omitempty"` // if empty, means it was cached
 }
 
-func (l *queryLog) logRequest(question *dns.Msg, answer *dns.Msg, result *dnsfilter.Result, elapsed time.Duration, addr net.Addr, upstream string) *logEntry {
+// getIPString is a helper function that extracts IP address from net.Addr
+func getIPString(addr net.Addr) string {
+	switch addr := addr.(type) {
+	case *net.UDPAddr:
+		return addr.IP.String()
+	case *net.TCPAddr:
+		return addr.IP.String()
+	}
+	return ""
+}
+
+func (l *queryLog) Add(question *dns.Msg, answer *dns.Msg, result *dnsfilter.Result, elapsed time.Duration, addr net.Addr, upstream string) {
 	var q []byte
 	var a []byte
 	var err error
-	ip := GetIPString(addr)
+	ip := getIPString(addr)
 
 	if question != nil {
 		q, err = question.Pack()
 		if err != nil {
 			log.Printf("failed to pack question for querylog: %s", err)
-			return nil
+			return
 		}
 	}
 
@@ -73,7 +90,7 @@ func (l *queryLog) logRequest(question *dns.Msg, answer *dns.Msg, result *dnsfil
 		a, err = answer.Pack()
 		if err != nil {
 			log.Printf("failed to pack answer for querylog: %s", err)
-			return nil
+			return
 		}
 	}
 
@@ -116,12 +133,10 @@ func (l *queryLog) logRequest(question *dns.Msg, answer *dns.Msg, result *dnsfil
 		// do it in separate goroutine -- we are stalling DNS response this whole time
 		go l.flushLogBuffer(false) // nolint
 	}
-
-	return &entry
 }
 
 // getQueryLogJson returns a map with the current query log ready to be converted to a JSON
-func (l *queryLog) getQueryLog() []map[string]interface{} {
+func (l *queryLog) GetData() []map[string]interface{} {
 	l.queryLogLock.RLock()
 	values := make([]*logEntry, len(l.queryLogCache))
 	copy(values, l.queryLogCache)

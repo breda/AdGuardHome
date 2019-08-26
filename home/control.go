@@ -160,7 +160,7 @@ func handleQueryLogDisable(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleQueryLog(w http.ResponseWriter, r *http.Request) {
-	data := config.dnsServer.GetQueryLog()
+	data := config.queryLog.GetData()
 
 	jsonVal, err := json.Marshal(data)
 	if err != nil {

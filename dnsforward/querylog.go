@@ -15,17 +15,18 @@ import (
 )
 
 const (
-	logBufferCap           = 5000            // maximum capacity of logBuffer before it's flushed to disk
-	queryLogTimeLimit      = time.Hour * 24  // how far in the past we care about querylogs
-	queryLogRotationPeriod = time.Hour * 24  // rotate the log every 24 hours
-	queryLogFileName       = "querylog.json" // .gz added during compression
-	queryLogSize           = 5000            // maximum API response for /querylog
-	queryLogTopSize        = 500             // Keep in memory only top N values
+	logBufferCap     = 5000            // maximum capacity of logBuffer before it's flushed to disk
+	queryLogFileName = "querylog.json" // .gz added during compression
+	queryLogSize     = 5000            // maximum API response for /querylog
+	queryLogTopSize  = 500             // Keep in memory only top N values
 )
 
 // queryLog is a structure that writes and reads the DNS query log
 type queryLog struct {
 	logFile string // path to the log file
+
+	// time interval file rotation interval
+	interval time.Duration
 
 	logBufferLock sync.RWMutex
 	logBuffer     []*logEntry

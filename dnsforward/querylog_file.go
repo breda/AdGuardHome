@@ -170,7 +170,7 @@ func (l *queryLog) rotateQueryLog() error {
 }
 
 func (l *queryLog) periodicQueryLogRotate() {
-	for range time.Tick(queryLogRotationPeriod) {
+	for range time.Tick(l.interval) {
 		err := l.rotateQueryLog()
 		if err != nil {
 			log.Error("Failed to rotate querylog: %s", err)

@@ -75,6 +75,7 @@ type FilteringConfig struct {
 	BlockingMode       string   `yaml:"blocking_mode"`        // mode how to answer filtered requests
 	BlockedResponseTTL uint32   `yaml:"blocked_response_ttl"` // if 0, then default is used (3600)
 	QueryLogEnabled    bool     `yaml:"querylog_enabled"`     // if true, query log is enabled
+	QueryLogInterval   uint     `yaml:"querylog_interval"`    // time interval for query log (in days)
 	Ratelimit          int      `yaml:"ratelimit"`            // max number of requests per second from a given IP (0 to disable)
 	RatelimitWhitelist []string `yaml:"ratelimit_whitelist"`  // a list of whitelisted client IP addresses
 	RefuseAny          bool     `yaml:"refuse_any"`           // if true, refuse ANY requests

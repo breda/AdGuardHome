@@ -20,27 +20,27 @@ const (
 
 // statsCtx - global context
 type statsCtx struct {
-	limit    int // in hours
-	filename string
-	unitID   unitIDCallback
+	limit    int            // maximum time we need to keep data for (in hours)
+	filename string         // database file name
+	unitID   unitIDCallback // user function which returns the current unit ID
 	db       *bolt.DB
 
-	unit     *unit
-	unitLock sync.Mutex
+	unit     *unit      // the current unit
+	unitLock sync.Mutex // protect 'unit'
 }
 
 // data for 1 time unit
 type unit struct {
-	id int
+	id int // unit ID.  Default: absolute hour since Jan 1, 1970
 
-	nTotal  int
-	nResult []int
-	timeSum int // usec
+	nTotal  int   // total requests
+	nResult []int // number of requests per one result
+	timeSum int   // sum of processing time of all requests (usec)
 
 	// top:
-	domains        map[string]int
-	blockedDomains map[string]int
-	clients        map[string]int
+	domains        map[string]int // number of requests per domain
+	blockedDomains map[string]int // number of blocked requests per domain
+	clients        map[string]int // number of requests per client
 }
 
 // name-count pair
@@ -84,7 +84,10 @@ func createObject(filename string, limit int, unitID unitIDCallback) *statsCtx {
 		forEachBkt := func(name []byte, b *bolt.Bucket) error {
 			id := btoi(name)
 			if id < firstID {
-				tx.DeleteBucket(name)
+				err := tx.DeleteBucket(name)
+				if err != nil {
+					log.Debug("tx.DeleteBucket: %s", err)
+				}
 				log.Debug("Stats: deleted unit %d", id)
 				unitDel++
 				return nil
@@ -96,10 +99,9 @@ func createObject(filename string, limit int, unitID unitIDCallback) *statsCtx {
 		udb = s.loadUnitFromDB(tx, id)
 
 		if unitDel != 0 {
-			tx.Commit()
-			log.Tracef("tx.Commit")
+			s.commitTxn(tx)
 		} else {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}
 
@@ -169,6 +171,15 @@ func (s *statsCtx) beginTxn(wr bool) *bolt.Tx {
 	return tx
 }
 
+func (s *statsCtx) commitTxn(tx *bolt.Tx) {
+	err := tx.Commit()
+	if err != nil {
+		log.Debug("tx.Commit: %s", err)
+		return
+	}
+	log.Tracef("tx.Commit")
+}
+
 // Get unit name
 func unitName(id int) []byte {
 	return itob(id)
@@ -214,10 +225,9 @@ func (s *statsCtx) periodicFlush() {
 		ok1 := s.flushUnitToDB(tx, u.id, udb)
 		ok2 := s.deleteUnit(tx, id-s.limit)
 		if ok1 || ok2 {
-			tx.Commit()
-			log.Tracef("tx.Commit")
+			s.commitTxn(tx)
 		} else {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}
 	log.Tracef("periodicFlush() exited")
@@ -346,7 +356,7 @@ func convertTopArray(a []countPair) []map[string]uint {
 	return m
 }
 
-func (s *statsCtx) Configurate(limit int) {
+func (s *statsCtx) Configure(limit int) {
 	if limit < 0 {
 		return
 	}
@@ -360,10 +370,9 @@ func (s *statsCtx) Close() {
 	tx := s.beginTxn(true)
 	if tx != nil {
 		if s.flushUnitToDB(tx, u.id, udb) {
-			tx.Commit()
-			log.Tracef("tx.Commit")
+			s.commitTxn(tx)
 		} else {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}
 
@@ -381,7 +390,7 @@ func (s *statsCtx) Clear() {
 	if tx != nil {
 		db := s.db
 		s.db = nil
-		tx.Rollback()
+		_ = tx.Rollback()
 
 		db.Close()
 		log.Tracef("db.Close")
@@ -420,6 +429,7 @@ func (s *statsCtx) Update(e Entry) {
 	s.unitLock.Unlock()
 }
 
+// nolint (gocyclo)
 func (s *statsCtx) GetData(timeUnit TimeUnit) map[string]interface{} {
 	d := map[string]interface{}{}
 
@@ -440,7 +450,7 @@ func (s *statsCtx) GetData(timeUnit TimeUnit) map[string]interface{} {
 		units = append(units, u)
 	}
 
-	tx.Rollback()
+	_ = tx.Rollback()
 
 	s.unitLock.Lock()
 	cu := serialize(s.unit)
@@ -458,7 +468,7 @@ func (s *statsCtx) GetData(timeUnit TimeUnit) map[string]interface{} {
 	// per time unit counters:
 
 	// 720 hours may span 31 days, so we skip data for the first day in this case
-	firstDayID := (firstID + 24 - 1) / 24 * 24 // ceil()
+	firstDayID := (firstID + 24 - 1) / 24 * 24 // align_ceil(24)
 
 	a := []uint{}
 	if timeUnit == Hours {

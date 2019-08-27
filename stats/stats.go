@@ -25,7 +25,7 @@ type Stats interface {
 
 	// Set new configuration at runtime.
 	// limit: time limit (in days)
-	Configurate(limit int)
+	Configure(limit int)
 
 	// Reset counters and clear database
 	Clear()

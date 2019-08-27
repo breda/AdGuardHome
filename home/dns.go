@@ -6,10 +6,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/AdguardTeam/AdGuardHome/stats"
-
 	"github.com/AdguardTeam/AdGuardHome/dnsfilter"
 	"github.com/AdguardTeam/AdGuardHome/dnsforward"
+	"github.com/AdguardTeam/AdGuardHome/stats"
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/log"

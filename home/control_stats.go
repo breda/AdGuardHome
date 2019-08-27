@@ -48,7 +48,7 @@ func handleStatsConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config.DNS.StatsInterval = reqData.Interval
-	config.stats.Configurate(int(config.DNS.StatsInterval))
+	config.stats.Configure(int(config.DNS.StatsInterval))
 
 	returnOK(w)
 }

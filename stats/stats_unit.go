@@ -61,9 +61,9 @@ type unitDB struct {
 	TimeAvg uint // usec
 }
 
-func createObject(filename string, limit int, unitID unitIDCallback) *statsCtx {
+func createObject(filename string, limitDays int, unitID unitIDCallback) *statsCtx {
 	s := statsCtx{}
-	s.limit = limit * 24
+	s.limit = limitDays * 24
 	s.filename = filename
 	s.unitID = newUnitID
 	if unitID != nil {
